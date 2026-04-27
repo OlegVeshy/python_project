@@ -1,10 +1,9 @@
 import asyncio
 
 from aiogram import Bot, Dispatcher
-from aiogram.filters import CommandStart
-from aiogram.types import Message
 
 from calendar_bot.config import load_config
+from calendar_bot.telegram_handlers import register_telegram_handlers
 
 
 config = load_config()
@@ -12,10 +11,7 @@ config = load_config()
 bot = Bot(token=config.telegram_bot_token)
 dp = Dispatcher()
 
-
-@dp.message(CommandStart())
-async def start_handler(message: Message) -> None:
-    await message.answer("Привет! Я CalendarBot.")
+register_telegram_handlers(dp, load_config())
 
 
 async def main() -> None:
