@@ -27,7 +27,7 @@ class Event:
             raise EventTimeError("Event end time cannot be earlier than start time")
         
     @classmethod
-    def from_parsed(cls, user_id: int, parsed_event: ParsedEvent) -> Event:
+    def from_parsed(cls, user_id: int, parsed_event: ParsedEvent) -> "Event":
         return cls(
             user_id=user_id,
             title=parsed_event.title,

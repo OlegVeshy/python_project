@@ -1,11 +1,9 @@
 import asyncio
-import os
 
 from aiogram import Bot, Dispatcher
 from aiogram.filters import CommandStart
 from aiogram.types import Message
 
-from calendar_bot.exceptions import ConfigError
 from calendar_bot.config import load_config
 
 
