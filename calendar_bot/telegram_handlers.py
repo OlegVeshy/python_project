@@ -23,7 +23,7 @@ def register_telegram_handlers(dp: Dispatcher, config: Config) -> None:
 
         answer = "==== Текущие события ====\n"
         for event in events_list:
-            answer += event.__repr__()
+            answer += event.__str__()
         
         await message.answer(answer)
 

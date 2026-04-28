@@ -41,8 +41,8 @@ class Event:
         return f"""
 -> {self.title} <-
 Начало: {self.start_at}
-Конец: {self.end_at}
-{'' if self.location is None else "Место: " + self.location}
-{'' if self.description is None else self.description}
+Конец: {self.end_at} \
+{'' if self.location is None else "\nМесто: " + self.location} \
+{'' if self.description is None else "\n" + self.description}
         """
         
