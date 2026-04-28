@@ -5,10 +5,12 @@ from dotenv import load_dotenv
 
 from calendar_bot.exceptions import ConfigError
 
+
 @dataclass(frozen=True)
 class Config:
     telegram_bot_token: str
     openai_api_key: str
+
 
 def load_config() -> Config:
     load_dotenv()
@@ -24,5 +26,5 @@ def load_config() -> Config:
 
     return Config(
         telegram_bot_token=token,
-        openai_api_key=api_key
+        openai_api_key=api_key,
     )

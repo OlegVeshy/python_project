@@ -70,7 +70,7 @@ def parse_event(
 
     response = client.chat.completions.create(
         model=model,
-        response_format=response_format, # type: ignore[arg-type]
+        response_format=response_format,  # type: ignore[arg-type]
         messages=[
             {
                 "role": "system",
