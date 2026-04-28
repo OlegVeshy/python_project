@@ -4,6 +4,7 @@ from aiogram import Bot, Dispatcher
 
 from calendar_bot.config import load_config
 from calendar_bot.telegram_handlers import register_telegram_handlers
+from calendar_bot import sql_storage
 
 
 config = load_config()
@@ -15,6 +16,7 @@ register_telegram_handlers(dp, config)
 
 
 async def main() -> None:
+    sql_storage.init_db(config.database_path)
     await dp.start_polling(bot)
 
 
