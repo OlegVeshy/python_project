@@ -12,11 +12,11 @@ config = load_config()
 bot = Bot(token=config.telegram_bot_token)
 dp = Dispatcher()
 
-register_telegram_handlers(dp, load_config())
+register_telegram_handlers(dp, config)
 
 
 async def main() -> None:
-    sql_storage.init_db(load_config().database_path)
+    sql_storage.init_db(config.database_path)
     await dp.start_polling(bot)
  
 

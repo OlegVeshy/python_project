@@ -43,6 +43,10 @@ def register_telegram_handlers(dp: Dispatcher, config: Config) -> None:
         user_id = message.from_user.id
         parsed_event = parse_event(text, config.openai_api_key)
 
+        if parsed_event.confidence <= 0.5:
+            await message.answer("Событие не получилось обработать в силу неоднозначности.")
+            return
+
         event = Event.from_parsed(user_id, parsed_event)
         database_path = config.database_path
 
