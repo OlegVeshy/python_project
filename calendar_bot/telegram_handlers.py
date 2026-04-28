@@ -3,7 +3,9 @@ from aiogram.filters import CommandStart
 from aiogram.types import Message
 
 from calendar_bot.llm_parser import parse_event
-from calendar_bot.config import Config
+from calendar_bot.config import Config, load_config
+from calendar_bot.events import Event
+from calendar_bot import sql_storage
 
 def register_telegram_handlers(dp: Dispatcher, config: Config) -> None:
     @dp.message(CommandStart())
@@ -17,13 +19,27 @@ def register_telegram_handlers(dp: Dispatcher, config: Config) -> None:
         if text is None:
             await message.answer("Пока поддерживается работа только с текстовыми сообщениями.")
             return
-
+        
+        if message.from_user is None:
+            await message.answer("Возникла ошибка при обработке автора сообщения.")
+            return
+        
+        user_id = message.from_user.id
         parsed_event = parse_event(text, config.openai_api_key)
-        await message.answer(                                           #TODO: обработать сообщение корректно, записав в базу
-            f"Название: {parsed_event.title}\n"
-            f"Начало: {parsed_event.start_at}\n"
-            f"Конец: {parsed_event.end_at}\n"
-            f"Место: {parsed_event.location or 'не указано'}\n"
-            f"Уверенность: {parsed_event.confidence:.2f}"
-        )
+
+        event = Event.from_parsed(user_id, parsed_event)
+        database_path = load_config().database_path
+
+        sql_storage.add_event(database_path, event)
+        await message.answer("Cобытие успешно добавлено")
+
+        
+
+
+
+
+
+    
+
+
         

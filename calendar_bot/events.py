@@ -36,4 +36,13 @@ class Event:
             description=parsed_event.description,
             location=parsed_event.location,
         )
+    
+    def __str__(self):
+        return f"""
+-> {self.title} <-
+Начало: {self.start_at}
+Конец: {self.end_at}
+{'' if self.location is None else "Место: " + self.location}
+{'' if self.description is None else self.description}
+        """
         
