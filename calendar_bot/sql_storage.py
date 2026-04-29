@@ -35,6 +35,11 @@ DELETE FROM events
 WHERE id = ? AND user_id = ?
 """
 
+DELETE_EXPIRED_EVENTS = """
+DELETE FROM events
+WHERE end_at < ?
+"""
+
 
 def init_db(database_path: str) -> None:
     connection = sqlite3.connect(database_path)
@@ -99,3 +104,16 @@ def delete_event(database_path: str, user_id: int, event_id: int) -> bool:
     connection.close()
 
     return deleted
+
+
+def delete_expired_events(database_path: str, now: datetime) -> int:
+    connection = sqlite3.connect(database_path)
+    cursor = connection.cursor()
+
+    cursor.execute(DELETE_EXPIRED_EVENTS, (now.isoformat(),))
+    deleted_count = cursor.rowcount
+
+    connection.commit()
+    connection.close()
+
+    return deleted_count
