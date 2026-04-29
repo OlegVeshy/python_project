@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime
 
 from aiogram import Bot, Dispatcher
 
@@ -17,6 +18,7 @@ register_telegram_handlers(dp, config)
 
 async def main() -> None:
     sql_storage.init_db(config.database_path)
+    sql_storage.delete_expired_events(config.database_path, datetime.now())
     await dp.start_polling(bot)
 
 

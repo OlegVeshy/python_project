@@ -30,6 +30,16 @@ WHERE user_id = (?)
 ORDER BY start_at
 """
 
+DELETE_EVENT = """
+DELETE FROM events
+WHERE id = ? AND user_id = ?
+"""
+
+DELETE_EXPIRED_EVENTS = """
+DELETE FROM events
+WHERE end_at < ?
+"""
+
 
 def init_db(database_path: str) -> None:
     connection = sqlite3.connect(database_path)
@@ -82,3 +92,28 @@ def list_events(database_path: str, user_id: int) -> list[Event]:
 
     connection.close()
     return event_list
+
+def delete_event(database_path: str, user_id: int, event_id: int) -> bool:
+    connection = sqlite3.connect(database_path)
+    cursor = connection.cursor()
+
+    cursor.execute(DELETE_EVENT, (event_id, user_id))
+    deleted = cursor.rowcount > 0
+
+    connection.commit()
+    connection.close()
+
+    return deleted
+
+
+def delete_expired_events(database_path: str, now: datetime) -> int:
+    connection = sqlite3.connect(database_path)
+    cursor = connection.cursor()
+
+    cursor.execute(DELETE_EXPIRED_EVENTS, (now.isoformat(),))
+    deleted_count = cursor.rowcount
+
+    connection.commit()
+    connection.close()
+
+    return deleted_count
