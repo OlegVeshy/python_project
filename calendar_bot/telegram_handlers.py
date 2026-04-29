@@ -31,6 +31,9 @@ def register_telegram_handlers(dp: Dispatcher, config: Config) -> None:
             answer += event.__str__()
         
         await message.answer(answer)
+    
+    # @dp.message(Command("delete"))
+    # async def DeleteHandler()
 
     
     @dp.message()
