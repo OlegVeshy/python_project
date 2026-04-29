@@ -1,3 +1,5 @@
+"""Application settings loaded from environment variables."""
+
 import os
 from dataclasses import dataclass
 
@@ -8,12 +10,16 @@ from calendar_bot.exceptions import ConfigError
 
 @dataclass(frozen=True)
 class Config:
+    """Runtime settings required to start the bot."""
+
     telegram_bot_token: str
     openai_api_key: str
     database_path: str
 
 
 def load_config() -> Config:
+    """Load required settings from `.env` and validate that they exist."""
+
     load_dotenv()
 
     token = os.getenv("TELEGRAM_BOT_TOKEN")

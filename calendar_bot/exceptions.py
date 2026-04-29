@@ -1,3 +1,6 @@
+"""Custom exceptions raised by CalendarBot."""
+
+
 class CalendarBotError(Exception):
     """Base class for CalendarBot expected errors."""
 

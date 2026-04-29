@@ -1,3 +1,5 @@
+"""Application entry point for CalendarBot."""
+
 import asyncio
 from datetime import datetime
 
@@ -17,6 +19,8 @@ register_telegram_handlers(dp, config)
 
 
 async def main() -> None:
+    """Prepare storage and start Telegram polling."""
+
     sql_storage.init_db(config.database_path)
     sql_storage.delete_expired_events(config.database_path, datetime.now())
     await dp.start_polling(bot)

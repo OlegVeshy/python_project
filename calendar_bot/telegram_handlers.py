@@ -1,3 +1,5 @@
+"""Telegram handlers for bot commands and user messages."""
+
 from datetime import datetime
 
 from aiogram import Dispatcher
@@ -15,16 +17,24 @@ from calendar_bot.telegram_utils import cancelable
 
 
 class DeleteEventState(StatesGroup):
+    """FSM states used by the event deletion flow."""
+
     waiting_for_event_id = State()
 
 
 def register_telegram_handlers(dp: Dispatcher, config: Config) -> None:
+    """Register all Telegram message handlers on the dispatcher."""
+
     @dp.message(CommandStart())
     async def start_handler(message: Message) -> None:
+        """Send a short greeting when the user starts the bot."""
+
         await message.answer("Привет! Я CalendarBot.")
 
     @dp.message(Command("list"))
     async def list_handler(message: Message) -> None:
+        """Show current events for the Telegram user."""
+
         if message.from_user is None:
             await message.answer("Возникла ошибка при обработке автора сообщения.")
             return
@@ -45,6 +55,8 @@ def register_telegram_handlers(dp: Dispatcher, config: Config) -> None:
 
     @dp.message(Command("delete"))
     async def delete_handler(message: Message, state: FSMContext) -> None:
+        """Start event deletion by showing a numbered event list."""
+
         if message.from_user is None:
             await message.answer("Возникла ошибка при обработке автора сообщения.")
             return
@@ -70,6 +82,8 @@ def register_telegram_handlers(dp: Dispatcher, config: Config) -> None:
     @dp.message(DeleteEventState.waiting_for_event_id)
     @cancelable
     async def delete_event_id_handler(message: Message, state: FSMContext) -> None:
+        """Delete the event selected by its displayed number."""
+
         text = message.text
 
         if text is None or not text.isdigit():
@@ -107,6 +121,8 @@ def register_telegram_handlers(dp: Dispatcher, config: Config) -> None:
 
     @dp.message()
     async def text_handler(message: Message) -> None:
+        """Parse a free-form text message and save it as an event."""
+
         text = message.text
 
         if text is None:

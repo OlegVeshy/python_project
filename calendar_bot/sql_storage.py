@@ -1,3 +1,5 @@
+"""SQLite persistence functions for calendar events."""
+
 import sqlite3
 from datetime import datetime
 
@@ -42,6 +44,8 @@ WHERE end_at < ?
 
 
 def init_db(database_path: str) -> None:
+    """Create the events table if the database is empty."""
+
     connection = sqlite3.connect(database_path)
     cursor = connection.cursor()
 
@@ -52,6 +56,8 @@ def init_db(database_path: str) -> None:
 
 
 def add_event(database_path: str, event: Event) -> None:
+    """Save an event to SQLite."""
+
     connection = sqlite3.connect(database_path)
     cursor = connection.cursor()
 
@@ -72,6 +78,8 @@ def add_event(database_path: str, event: Event) -> None:
 
 
 def list_events(database_path: str, user_id: int) -> list[Event]:
+    """Return all events belonging to a Telegram user."""
+
     connection = sqlite3.connect(database_path)
     cursor = connection.cursor()
 
@@ -97,6 +105,8 @@ def list_events(database_path: str, user_id: int) -> list[Event]:
 
 
 def delete_event(database_path: str, user_id: int, event_id: int) -> bool:
+    """Delete a user's event by database id and report whether it existed."""
+
     connection = sqlite3.connect(database_path)
     cursor = connection.cursor()
 
@@ -110,6 +120,8 @@ def delete_event(database_path: str, user_id: int, event_id: int) -> bool:
 
 
 def delete_expired_events(database_path: str, now: datetime) -> int:
+    """Delete events that ended before the given datetime."""
+
     connection = sqlite3.connect(database_path)
     cursor = connection.cursor()
 

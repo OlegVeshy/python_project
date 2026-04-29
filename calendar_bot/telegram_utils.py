@@ -1,3 +1,5 @@
+"""Small helpers shared by Telegram handlers."""
+
 from collections.abc import Awaitable, Callable
 from functools import wraps
 
@@ -10,6 +12,8 @@ CANCEL_WORDS = {"/cancel", "cancel", "отмена"}
 
 
 def cancelable(handler: Handler) -> Handler:
+    """Allow a state handler to be cancelled by a short text command."""
+
     @wraps(handler)
     async def wrapper(message: Message, state: FSMContext) -> None:
         text = message.text

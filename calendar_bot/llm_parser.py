@@ -1,3 +1,5 @@
+"""OpenAI-based parser that extracts calendar events from free-form text."""
+
 import json
 from datetime import datetime
 
@@ -59,6 +61,8 @@ def parse_event(
     model: str = DEFAULT_MODEL,
     now: datetime | None = None,
 ) -> ParsedEvent:
+    """Parse one user message into a structured event draft."""
+
     if now is None:
         now = datetime.now()
 
