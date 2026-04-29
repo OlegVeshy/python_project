@@ -22,6 +22,10 @@ def register_telegram_handlers(dp: Dispatcher, config: Config) -> None:
         user_id = message.from_user.id
         events_list = sql_storage.list_events(config.database_path, user_id)
 
+        if not events_list:
+            message.answer("Текущих событий пока нет")
+            return
+
         answer = "==== Текущие события ====\n"
         for event in events_list:
             answer += event.__str__()
