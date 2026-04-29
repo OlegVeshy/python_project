@@ -1,11 +1,17 @@
 from aiogram import Dispatcher
 from aiogram.filters import CommandStart, Command
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import Message
 
 from calendar_bot.llm_parser import parse_event
 from calendar_bot.config import Config
 from calendar_bot.events import Event
 from calendar_bot import sql_storage
+
+
+class DeleteEventState(StatesGroup):
+    waiting_for_event_id = State()
 
 
 def register_telegram_handlers(dp: Dispatcher, config: Config) -> None:
@@ -23,7 +29,7 @@ def register_telegram_handlers(dp: Dispatcher, config: Config) -> None:
         events_list = sql_storage.list_events(config.database_path, user_id)
 
         if not events_list:
-            message.answer("Текущих событий пока нет")
+            await message.answer("Текущих событий пока нет")
             return
 
         answer = "==== Текущие события ====\n"
@@ -31,11 +37,36 @@ def register_telegram_handlers(dp: Dispatcher, config: Config) -> None:
             answer += event.__str__()
         
         await message.answer(answer)
-    
-    # @dp.message(Command("delete"))
-    # async def DeleteHandler()
 
-    
+    @dp.message(Command("delete"))
+    async def delete_handler(message: Message, state: FSMContext) -> None:
+        await message.answer("Введите id события, которое нужно удалить.")
+        await state.set_state(DeleteEventState.waiting_for_event_id)
+
+    @dp.message(DeleteEventState.waiting_for_event_id)
+    async def delete_event_id_handler(message: Message, state: FSMContext) -> None:
+        text = message.text
+
+        if text is None or not text.isdigit():
+            await message.answer("Id события должен быть числом. Попробуйте ещё раз.")
+            return
+
+        if message.from_user is None:
+            await message.answer("Возникла ошибка при обработке автора сообщения.")
+            await state.clear()
+            return
+
+        event_id = int(text)
+        user_id = message.from_user.id
+        deleted = sql_storage.delete_event(config.database_path, user_id, event_id)
+
+        if deleted:
+            await message.answer(f"Событие #{event_id} удалено.")
+        else:
+            await message.answer("Событие с таким id не найдено.")
+
+        await state.clear()
+
     @dp.message()
     async def text_handler(message: Message) -> None:
         text = message.text
@@ -60,5 +91,4 @@ def register_telegram_handlers(dp: Dispatcher, config: Config) -> None:
 
         sql_storage.add_event(database_path, event)
         await message.answer("Cобытие успешно добавлено")
-
 
