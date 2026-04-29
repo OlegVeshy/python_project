@@ -5,6 +5,7 @@ from aiogram.types import Message
 from calendar_bot.llm_parser import parse_event
 from calendar_bot.config import Config
 from calendar_bot.events import Event
+from calendar_bot.exceptions import EventTimeError
 from calendar_bot import sql_storage
 
 
@@ -46,13 +47,22 @@ def register_telegram_handlers(dp: Dispatcher, config: Config) -> None:
             return
         
         user_id = message.from_user.id
-        parsed_event = parse_event(text, config.openai_api_key)
+        try:
+            parsed_event = parse_event(text, config.openai_api_key)
+        except Exception:
+            await message.answer("Не получилось разобрать событие. Попробуйте описать его точнее.")
+            return
 
         if parsed_event.confidence <= 0.5:
             await message.answer("Событие не получилось обработать в силу неоднозначности.")
             return
 
-        event = Event.from_parsed(user_id, parsed_event)
+        try:
+            event = Event.from_parsed(user_id, parsed_event)
+        except EventTimeError:
+            await message.answer("Не получилось определить корректное время события.")
+            return
+
         database_path = config.database_path
 
         sql_storage.add_event(database_path, event)
