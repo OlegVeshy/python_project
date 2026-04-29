@@ -27,8 +27,8 @@ def register_telegram_handlers(dp: Dispatcher, config: Config) -> None:
     async def list_handler(message: Message) -> None:
         if message.from_user is None:
             await message.answer("Возникла ошибка при обработке автора сообщения.")
-            return 
-        
+            return
+
         user_id = message.from_user.id
         sql_storage.delete_expired_events(config.database_path, datetime.now())
         events_list = sql_storage.list_events(config.database_path, user_id)
@@ -39,8 +39,8 @@ def register_telegram_handlers(dp: Dispatcher, config: Config) -> None:
 
         answer = "==== Текущие события ====\n"
         for event in events_list:
-            answer += event.__str__()
-        
+            answer += str(event)
+
         await message.answer(answer)
 
     @dp.message(Command("delete"))
@@ -112,11 +112,11 @@ def register_telegram_handlers(dp: Dispatcher, config: Config) -> None:
         if text is None:
             await message.answer("Пока поддерживается работа только с текстовыми сообщениями.")
             return
-        
+
         if message.from_user is None:
             await message.answer("Возникла ошибка при обработке автора сообщения.")
             return
-        
+
         user_id = message.from_user.id
         try:
             parsed_event = parse_event(text, config.openai_api_key)
@@ -137,4 +137,4 @@ def register_telegram_handlers(dp: Dispatcher, config: Config) -> None:
         database_path = config.database_path
 
         sql_storage.add_event(database_path, event)
-        await message.answer("Cобытие успешно добавлено")
+        await message.answer("Событие успешно добавлено")

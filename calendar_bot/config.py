@@ -24,14 +24,13 @@ def load_config() -> Config:
         raise ConfigError("Telegram bot token is not set")
 
     if api_key is None:
-        raise ConfigError("Openai API key is not set")
-    
+        raise ConfigError("OpenAI API key is not set")
+
     if database_path is None:
-        raise ConfigError("Database path must be provided manualy")
+        raise ConfigError("Database path must be provided manually")
 
     return Config(
         telegram_bot_token=token,
         openai_api_key=api_key,
-        database_path=database_path
+        database_path=database_path,
     )
-

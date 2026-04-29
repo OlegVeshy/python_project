@@ -1,18 +1,17 @@
 from collections.abc import Awaitable, Callable
 from functools import wraps
-from typing import Any
 
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 
 
-Handler = Callable[..., Awaitable[None]]
+Handler = Callable[[Message, FSMContext], Awaitable[None]]
 CANCEL_WORDS = {"/cancel", "cancel", "отмена"}
 
 
 def cancelable(handler: Handler) -> Handler:
     @wraps(handler)
-    async def wrapper(message: Message, state: FSMContext, *args: Any, **kwargs: Any) -> None:
+    async def wrapper(message: Message, state: FSMContext) -> None:
         text = message.text
 
         if text is not None and text.strip().lower() in CANCEL_WORDS:
@@ -20,6 +19,6 @@ def cancelable(handler: Handler) -> Handler:
             await message.answer("Действие отменено.")
             return
 
-        await handler(message, state, *args, **kwargs)
+        await handler(message, state)
 
     return wrapper
