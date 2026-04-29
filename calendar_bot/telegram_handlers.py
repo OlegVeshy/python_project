@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from aiogram import Dispatcher
 from aiogram.filters import CommandStart, Command
 from aiogram.fsm.context import FSMContext
@@ -26,6 +28,7 @@ def register_telegram_handlers(dp: Dispatcher, config: Config) -> None:
             return 
         
         user_id = message.from_user.id
+        sql_storage.delete_expired_events(config.database_path, datetime.now())
         events_list = sql_storage.list_events(config.database_path, user_id)
 
         if not events_list:
@@ -45,6 +48,7 @@ def register_telegram_handlers(dp: Dispatcher, config: Config) -> None:
             return
 
         user_id = message.from_user.id
+        sql_storage.delete_expired_events(config.database_path, datetime.now())
         events_list = sql_storage.list_events(config.database_path, user_id)
 
         if not events_list:
