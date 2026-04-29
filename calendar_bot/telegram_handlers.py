@@ -10,6 +10,7 @@ from calendar_bot.llm_parser import parse_event
 from calendar_bot.config import Config
 from calendar_bot.events import Event
 from calendar_bot import sql_storage
+from calendar_bot import telegram_utils
 
 
 class DeleteEventState(StatesGroup):
@@ -66,6 +67,7 @@ def register_telegram_handlers(dp: Dispatcher, config: Config) -> None:
         await state.set_state(DeleteEventState.waiting_for_event_id)
 
     @dp.message(DeleteEventState.waiting_for_event_id)
+    @telegram_utils.cancelable
     async def delete_event_id_handler(message: Message, state: FSMContext) -> None:
         text = message.text
 
