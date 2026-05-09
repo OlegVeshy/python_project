@@ -8,7 +8,7 @@ from openai import OpenAI
 from calendar_bot.events import ParsedEvent
 
 
-DEFAULT_MODEL = "gpt-4o-mini"
+DEFAULT_MODEL = "gpt-4.1-mini"
 
 
 EVENT_SCHEMA = {
@@ -22,11 +22,11 @@ EVENT_SCHEMA = {
             },
             "start_at": {
                 "type": "string",
-                "description": "Event start datetime in ISO 8601 format.",
+                "description": "Event start datetime in ISO 8601 format. For deadlines, this is the deadline moment.",
             },
             "end_at": {
                 "type": "string",
-                "description": "Event end datetime in ISO 8601 format.",
+                "description": "Event end datetime in ISO 8601 format. For instant events and deadlines, this must equal start_at.",
             },
             "description": {
                 "type": ["string", "null"],
@@ -82,7 +82,13 @@ def parse_event(
                     "You extract calendar events from user messages. "
                     f"Current datetime is {now.isoformat()}. "
                     "Return only the structured data requested by the schema. "
-                    "If the user does not mention event duration, use 1 hour. "
+                    "Distinguish scheduled events from instant events. "
+                    "Scheduled events are meetings, classes, calls, visits, and other activities with duration. "
+                    "Instant events are deadlines, reminders, tasks due at a certain time, or point-in-time notes. "
+                    "For instant events, set end_at exactly equal to start_at. "
+                    "For deadline phrases like 'до 18:00', 'deadline at 18:00', or 'сдать проект к пятнице', "
+                    "use the due date and time as both start_at and end_at. "
+                    "If a scheduled event does not mention duration, use 1 hour. "
                     "If the user does not mention a location, use null. "
                     "If the user does not mention a description, use null. "
                     "If the date or time is unclear, make the best reasonable "
