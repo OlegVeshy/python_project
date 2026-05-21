@@ -3,7 +3,7 @@
 import json
 from datetime import datetime
 
-from openai import OpenAI
+from openai import AsyncOpenAI
 
 from calendar_bot.events import ParsedEvent
 
@@ -55,7 +55,7 @@ EVENT_SCHEMA = {
 }
 
 
-def parse_event(
+async def parse_event(
     text: str,
     api_key: str,
     model: str = DEFAULT_MODEL,
@@ -64,15 +64,15 @@ def parse_event(
     """Parse one user message into a structured event draft."""
 
     if now is None:
-        now = datetime.now()
+        now = datetime.now().astimezone()
 
-    client = OpenAI(api_key=api_key)
+    client = AsyncOpenAI(api_key=api_key)
     response_format = {
         "type": "json_schema",
         "json_schema": EVENT_SCHEMA,
     }
 
-    response = client.chat.completions.create(
+    response = await client.chat.completions.create(
         model=model,
         response_format=response_format,  # type: ignore[arg-type]
         messages=[
@@ -81,6 +81,8 @@ def parse_event(
                 "content": (
                     "You extract calendar events from user messages. "
                     f"Current datetime is {now.isoformat()}. "
+                    "Use the current datetime timezone for all relative dates. "
+                    "Return ISO datetimes in local time without a timezone offset. "
                     "Return only the structured data requested by the schema. "
                     "Distinguish scheduled events from instant events. "
                     "Scheduled events are meetings, classes, calls, visits, and other activities with duration. "
@@ -110,9 +112,19 @@ def parse_event(
 
     return ParsedEvent(
         title=data["title"],
-        start_at=datetime.fromisoformat(data["start_at"]),
-        end_at=datetime.fromisoformat(data["end_at"]),
+        start_at=_parse_local_datetime(data["start_at"]),
+        end_at=_parse_local_datetime(data["end_at"]),
         description=data["description"],
         location=data["location"],
         confidence=data["confidence"],
     )
+
+
+def _parse_local_datetime(value: str) -> datetime:
+    """Parse ISO datetime and normalize timezone-aware values to local naive time."""
+
+    parsed = datetime.fromisoformat(value)
+    if parsed.tzinfo is None:
+        return parsed
+
+    return parsed.astimezone().replace(tzinfo=None)

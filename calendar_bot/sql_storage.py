@@ -37,9 +37,14 @@ DELETE FROM events
 WHERE id = ? AND user_id = ?
 """
 
-DELETE_EXPIRED_EVENTS = """
+DELETE_EVENT_BY_ID = """
 DELETE FROM events
-WHERE end_at < ?
+WHERE id = ?
+"""
+
+LIST_EVENT_ENDS = """
+SELECT id, end_at
+FROM events
 """
 
 
@@ -125,10 +130,32 @@ def delete_expired_events(database_path: str, now: datetime) -> int:
     connection = sqlite3.connect(database_path)
     cursor = connection.cursor()
 
-    cursor.execute(DELETE_EXPIRED_EVENTS, (now.isoformat(),))
-    deleted_count = cursor.rowcount
+    normalized_now = _to_local_naive(now)
+    cursor.execute(LIST_EVENT_ENDS)
+
+    deleted_count = 0
+    for event_id, end_at_text in cursor.fetchall():
+        end_at = _parse_stored_datetime(end_at_text)
+        if end_at < normalized_now:
+            cursor.execute(DELETE_EVENT_BY_ID, (event_id,))
+            deleted_count += cursor.rowcount
 
     connection.commit()
     connection.close()
 
     return deleted_count
+
+
+def _parse_stored_datetime(value: str) -> datetime:
+    """Parse stored datetime and normalize timezone-aware values to local naive time."""
+
+    return _to_local_naive(datetime.fromisoformat(value))
+
+
+def _to_local_naive(value: datetime) -> datetime:
+    """Convert aware datetimes to local naive datetimes used by storage."""
+
+    if value.tzinfo is None:
+        return value
+
+    return value.astimezone().replace(tzinfo=None)
