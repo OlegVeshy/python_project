@@ -1,7 +1,6 @@
 """Telegram handlers for bot commands and user messages."""
 
 from datetime import datetime
-from typing import TypeAlias, cast
 
 from aiogram import Dispatcher, F
 from aiogram.filters import Command, CommandStart
@@ -27,9 +26,6 @@ from calendar_bot.telegram.keyboards import (
 )
 from calendar_bot.llm_parser import parse_event
 from calendar_bot.telegram.utils import cancelable
-
-
-EventDraftData: TypeAlias = dict[str, str | None]
 
 
 class EventDraftState(StatesGroup):
@@ -127,23 +123,10 @@ def register_telegram_handlers(dp: Dispatcher, config: Config) -> None:
         """Save a confirmed event draft."""
 
         data = await state.get_data()
-        pending_event = data.get("pending_event")
+        event = data.get("pending_event")
 
-        if not isinstance(pending_event, dict):
+        if not isinstance(event, Event):
             await callback.answer("Черновик события не найден.", show_alert=True)
-            await state.clear()
-            return
-
-        try:
-            event = _event_from_dict(
-                callback.from_user.id,
-                cast(EventDraftData, pending_event),
-            )
-        except (KeyError, ValueError, EventTimeError):
-            await callback.answer(
-                "Черновик повреждён. Попробуй создать событие заново.",
-                show_alert=True,
-            )
             await state.clear()
             return
 
@@ -207,7 +190,7 @@ async def _parse_and_send_event_draft(message: Message, state: FSMContext, confi
         await message.answer("Не получилось определить корректное время события.")
         return
 
-    await state.update_data(pending_event=_event_to_dict(event))
+    await state.update_data(pending_event=event)
     await state.set_state(EventDraftState.waiting_for_confirmation)
 
     await message.answer(
@@ -236,37 +219,3 @@ async def _send_events_list(message: Message, config: Config) -> None:
         "Текущие события:\n\n" + "\n\n".join(event_cards),
         reply_markup=main_menu_keyboard(),
     )
-
-
-def _event_to_dict(event: Event) -> EventDraftData:
-    """Serialize an event draft for FSM storage."""
-
-    return {
-        "title": event.title,
-        "start_at": event.start_at.isoformat(),
-        "end_at": event.end_at.isoformat(),
-        "description": event.description,
-        "location": event.location,
-    }
-
-
-def _event_from_dict(user_id: int, data: EventDraftData) -> Event:
-    """Restore an event draft from FSM storage."""
-
-    return Event(
-        user_id=user_id,
-        title=_required_string(data["title"]),
-        start_at=datetime.fromisoformat(_required_string(data["start_at"])),
-        end_at=datetime.fromisoformat(_required_string(data["end_at"])),
-        description=data["description"],
-        location=data["location"],
-    )
-
-
-def _required_string(value: str | None) -> str:
-    """Return a required string field or raise ValueError."""
-
-    if value is None:
-        raise ValueError("Required string is missing")
-
-    return value

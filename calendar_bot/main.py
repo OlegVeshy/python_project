@@ -11,16 +11,14 @@ from calendar_bot.telegram.handlers import register_telegram_handlers
 from calendar_bot import sql_storage
 
 
-config = load_config()
-
-bot = Bot(token=config.telegram_bot_token)
-dp = Dispatcher()
-
-register_telegram_handlers(dp, config)
-
-
 async def main() -> None:
     """Prepare storage and start Telegram polling."""
+
+    config = load_config()
+    bot = Bot(token=config.telegram_bot_token)
+    dp = Dispatcher()
+
+    register_telegram_handlers(dp, config)
 
     sql_storage.init_db(config.database_path)
     sql_storage.delete_expired_events(config.database_path, datetime.now())

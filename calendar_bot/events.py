@@ -60,25 +60,3 @@ class Event:
             description=parsed_event.description,
             location=parsed_event.location,
         )
-
-    def __str__(self) -> str:
-        """Format event for Telegram messages."""
-
-        lines = [
-            f"-> {self.title} <-",
-            f"Начало: {self.start_at}",
-            f"Конец: {self.end_at}",
-        ]
-
-        if self.is_instant:
-            lines.append("Тип: моментальное событие")
-        else:
-            lines.append(f"Длительность: {self.duration_minutes} мин.")
-
-        if self.location is not None:
-            lines.append(f"Место: {self.location}")
-
-        if self.description is not None:
-            lines.append(self.description)
-
-        return "\n".join(lines) + "\n"
