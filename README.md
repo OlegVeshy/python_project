@@ -48,8 +48,11 @@ calendar_bot/
   llm_parser.py         # разбор текста через OpenAI
   main.py               # точка входа
   sql_storage.py        # работа с SQLite
-  telegram_handlers.py  # обработчики Telegram-сообщений
-  telegram_utils.py     # вспомогательные инструменты для Telegram-логики
+  telegram/
+    formatters.py       # форматирование Telegram-сообщений
+    handlers.py         # обработчики Telegram-сообщений
+    keyboards.py        # Telegram-клавиатуры и callback-константы
+    utils.py            # вспомогательные инструменты для Telegram-логики
 ```
 
 ## Настройка

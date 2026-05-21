@@ -7,30 +7,28 @@ from aiogram import Dispatcher, F
 from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from aiogram.types import (
-    CallbackQuery,
-    InlineKeyboardButton,
-    InlineKeyboardMarkup,
-    KeyboardButton,
-    Message,
-    ReplyKeyboardMarkup,
-)
+from aiogram.types import CallbackQuery, Message
 
 from calendar_bot import sql_storage
 from calendar_bot.config import Config
 from calendar_bot.events import Event
 from calendar_bot.exceptions import EventTimeError
+from calendar_bot.telegram.formatters import format_event_card
+from calendar_bot.telegram.keyboards import (
+    ADD_EVENT_BUTTON,
+    CANCEL_EVENT_CALLBACK,
+    DELETE_EVENT_BUTTON,
+    DELETE_EVENT_CALLBACK_PREFIX,
+    LIST_EVENTS_BUTTON,
+    SAVE_EVENT_CALLBACK,
+    delete_events_keyboard,
+    event_confirmation_keyboard,
+    main_menu_keyboard,
+)
 from calendar_bot.llm_parser import parse_event
-from calendar_bot.telegram_utils import cancelable
+from calendar_bot.telegram.utils import cancelable
 
 
-ADD_EVENT_BUTTON = "Добавить событие"
-LIST_EVENTS_BUTTON = "Мои события"
-DELETE_EVENT_BUTTON = "Удалить событие"
-
-SAVE_EVENT_CALLBACK = "event:save"
-CANCEL_EVENT_CALLBACK = "event:cancel"
-DELETE_EVENT_CALLBACK_PREFIX = "delete:"
 EventDraftData: TypeAlias = dict[str, str | None]
 
 
@@ -50,7 +48,7 @@ def register_telegram_handlers(dp: Dispatcher, config: Config) -> None:
         await message.answer(
             "Привет! Я CalendarBot. Напиши событие обычной фразой, "
             "а я предложу черновик перед сохранением.",
-            reply_markup=_main_menu_keyboard(),
+            reply_markup=main_menu_keyboard(),
         )
 
     @dp.message(Command("list"))
@@ -74,12 +72,12 @@ def register_telegram_handlers(dp: Dispatcher, config: Config) -> None:
         events_list = sql_storage.list_events(config.database_path, user_id)
 
         if not events_list:
-            await message.answer("Текущих событий пока нет.", reply_markup=_main_menu_keyboard())
+            await message.answer("Текущих событий пока нет.", reply_markup=main_menu_keyboard())
             return
 
         await message.answer(
             "Выбери событие для удаления:",
-            reply_markup=_delete_events_keyboard(events_list),
+            reply_markup=delete_events_keyboard(events_list),
         )
 
     @dp.callback_query(F.data.startswith(DELETE_EVENT_CALLBACK_PREFIX))
@@ -122,7 +120,7 @@ def register_telegram_handlers(dp: Dispatcher, config: Config) -> None:
         """Cancel the current action if there is one."""
 
         await state.clear()
-        await message.answer("Действие отменено.", reply_markup=_main_menu_keyboard())
+        await message.answer("Действие отменено.", reply_markup=main_menu_keyboard())
 
     @dp.callback_query(F.data == SAVE_EVENT_CALLBACK)
     async def save_event_callback_handler(callback: CallbackQuery, state: FSMContext) -> None:
@@ -154,7 +152,7 @@ def register_telegram_handlers(dp: Dispatcher, config: Config) -> None:
         await callback.answer("Событие сохранено.")
 
         if isinstance(callback.message, Message):
-            await callback.message.edit_text("Событие сохранено:\n\n" + _format_event_card(event))
+            await callback.message.edit_text("Событие сохранено:\n\n" + format_event_card(event))
 
     @dp.callback_query(F.data == CANCEL_EVENT_CALLBACK)
     async def cancel_event_callback_handler(callback: CallbackQuery, state: FSMContext) -> None:
@@ -213,8 +211,8 @@ async def _parse_and_send_event_draft(message: Message, state: FSMContext, confi
     await state.set_state(EventDraftState.waiting_for_confirmation)
 
     await message.answer(
-        _format_event_card(event),
-        reply_markup=_event_confirmation_keyboard(),
+        format_event_card(event),
+        reply_markup=event_confirmation_keyboard(),
     )
 
 
@@ -230,96 +228,14 @@ async def _send_events_list(message: Message, config: Config) -> None:
     events_list = sql_storage.list_events(config.database_path, user_id)
 
     if not events_list:
-        await message.answer("Текущих событий пока нет.", reply_markup=_main_menu_keyboard())
+        await message.answer("Текущих событий пока нет.", reply_markup=main_menu_keyboard())
         return
 
-    event_cards = [_format_event_card(event) for event in events_list]
+    event_cards = [format_event_card(event) for event in events_list]
     await message.answer(
         "Текущие события:\n\n" + "\n\n".join(event_cards),
-        reply_markup=_main_menu_keyboard(),
+        reply_markup=main_menu_keyboard(),
     )
-
-
-def _main_menu_keyboard() -> ReplyKeyboardMarkup:
-    """Build the persistent Telegram menu keyboard."""
-
-    return ReplyKeyboardMarkup(
-        keyboard=[
-            [KeyboardButton(text=ADD_EVENT_BUTTON)],
-            [
-                KeyboardButton(text=LIST_EVENTS_BUTTON),
-                KeyboardButton(text=DELETE_EVENT_BUTTON),
-            ],
-        ],
-        resize_keyboard=True,
-        input_field_placeholder="Опиши событие или выбери действие",
-    )
-
-
-def _event_confirmation_keyboard() -> InlineKeyboardMarkup:
-    """Build inline buttons for saving or discarding a parsed event draft."""
-
-    return InlineKeyboardMarkup(
-        inline_keyboard=[
-            [
-                InlineKeyboardButton(text="Сохранить", callback_data=SAVE_EVENT_CALLBACK),
-                InlineKeyboardButton(text="Отмена", callback_data=CANCEL_EVENT_CALLBACK),
-            ]
-        ]
-    )
-
-
-def _delete_events_keyboard(events_list: list[Event]) -> InlineKeyboardMarkup:
-    """Build inline delete buttons for visible events."""
-
-    buttons: list[list[InlineKeyboardButton]] = []
-    for event in events_list:
-        if event.id is None:
-            continue
-
-        title = event.title
-        if len(title) > 40:
-            title = title[:37] + "..."
-
-        buttons.append(
-            [
-                InlineKeyboardButton(
-                    text=f"Удалить: {title}",
-                    callback_data=f"{DELETE_EVENT_CALLBACK_PREFIX}{event.id}",
-                )
-            ]
-        )
-
-    return InlineKeyboardMarkup(inline_keyboard=buttons)
-
-
-def _format_event_card(event: Event) -> str:
-    """Format an event as a compact Telegram card."""
-
-    lines = [
-        event.title,
-        f"Начало: {_format_datetime(event.start_at)}",
-    ]
-
-    if event.is_instant:
-        lines.append("Тип: моментальное событие")
-    else:
-        lines.append(f"Конец: {_format_datetime(event.end_at)}")
-        lines.append(f"Длительность: {event.duration_minutes} мин.")
-
-    if event.location is not None:
-        lines.append(f"Место: {event.location}")
-
-    if event.description is not None:
-        lines.append(f"Описание: {event.description}")
-
-    return "\n".join(lines)
-
-
-def _format_datetime(value: datetime) -> str:
-    """Format a datetime for Russian Telegram messages."""
-
-    return value.strftime("%d.%m.%Y %H:%M")
 
 
 def _event_to_dict(event: Event) -> EventDraftData:

@@ -7,7 +7,7 @@ from aiogram import Bot, Dispatcher
 from aiogram.types import BotCommand
 
 from calendar_bot.config import load_config
-from calendar_bot.telegram_handlers import register_telegram_handlers
+from calendar_bot.telegram.handlers import register_telegram_handlers
 from calendar_bot import sql_storage
 
 
