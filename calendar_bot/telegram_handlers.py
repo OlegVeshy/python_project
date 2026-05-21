@@ -208,7 +208,7 @@ async def _parse_and_send_event_draft(message: Message, state: FSMContext, confi
     await state.set_state(EventDraftState.waiting_for_confirmation)
 
     await message.answer(
-        "Я распознал событие так:\n\n" + _format_event_card(event),
+        _format_event_card(event),
         reply_markup=_event_confirmation_keyboard(),
     )
 
