@@ -4,6 +4,8 @@ import json
 from datetime import datetime
 
 from openai import AsyncOpenAI
+from openai.types.chat.completion_create_params import ResponseFormat
+from openai.types.shared_params.response_format_json_schema import JSONSchema
 
 from calendar_bot.events import ParsedEvent
 
@@ -11,7 +13,7 @@ from calendar_bot.events import ParsedEvent
 DEFAULT_MODEL = "gpt-4.1-mini"
 
 
-EVENT_SCHEMA = {
+EVENT_SCHEMA: JSONSchema = {
     "name": "parsed_event",
     "schema": {
         "type": "object",
@@ -67,14 +69,14 @@ async def parse_event(
         now = datetime.now().astimezone()
 
     client = AsyncOpenAI(api_key=api_key)
-    response_format = {
+    response_format: ResponseFormat = {
         "type": "json_schema",
         "json_schema": EVENT_SCHEMA,
     }
 
     response = await client.chat.completions.create(
         model=model,
-        response_format=response_format,  # type: ignore[arg-type]
+        response_format=response_format,
         messages=[
             {
                 "role": "system",

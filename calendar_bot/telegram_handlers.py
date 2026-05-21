@@ -1,6 +1,7 @@
 """Telegram handlers for bot commands and user messages."""
 
 from datetime import datetime
+from typing import TypeAlias, cast
 
 from aiogram import Dispatcher, F
 from aiogram.filters import Command, CommandStart
@@ -30,6 +31,7 @@ DELETE_EVENT_BUTTON = "Удалить событие"
 SAVE_EVENT_CALLBACK = "event:save"
 CANCEL_EVENT_CALLBACK = "event:cancel"
 DELETE_EVENT_CALLBACK_PREFIX = "delete:"
+EventDraftData: TypeAlias = dict[str, str | None]
 
 
 class EventDraftState(StatesGroup):
@@ -101,7 +103,7 @@ def register_telegram_handlers(dp: Dispatcher, config: Config) -> None:
 
         if deleted:
             await callback.answer("Событие удалено.")
-            if callback.message is not None:
+            if isinstance(callback.message, Message):
                 await callback.message.edit_text("Событие удалено.")
         else:
             await callback.answer("Событие уже удалено или не найдено.", show_alert=True)
@@ -135,7 +137,10 @@ def register_telegram_handlers(dp: Dispatcher, config: Config) -> None:
             return
 
         try:
-            event = _event_from_dict(callback.from_user.id, pending_event)
+            event = _event_from_dict(
+                callback.from_user.id,
+                cast(EventDraftData, pending_event),
+            )
         except (KeyError, ValueError, EventTimeError):
             await callback.answer(
                 "Черновик повреждён. Попробуй создать событие заново.",
@@ -148,7 +153,7 @@ def register_telegram_handlers(dp: Dispatcher, config: Config) -> None:
         await state.clear()
         await callback.answer("Событие сохранено.")
 
-        if callback.message is not None:
+        if isinstance(callback.message, Message):
             await callback.message.edit_text("Событие сохранено:\n\n" + _format_event_card(event))
 
     @dp.callback_query(F.data == CANCEL_EVENT_CALLBACK)
@@ -158,7 +163,7 @@ def register_telegram_handlers(dp: Dispatcher, config: Config) -> None:
         await state.clear()
         await callback.answer("Черновик отменён.")
 
-        if callback.message is not None:
+        if isinstance(callback.message, Message):
             await callback.message.edit_text("Черновик отменён.")
 
     @dp.message(EventDraftState.waiting_for_confirmation)
@@ -267,7 +272,7 @@ def _event_confirmation_keyboard() -> InlineKeyboardMarkup:
 def _delete_events_keyboard(events_list: list[Event]) -> InlineKeyboardMarkup:
     """Build inline delete buttons for visible events."""
 
-    buttons = []
+    buttons: list[list[InlineKeyboardButton]] = []
     for event in events_list:
         if event.id is None:
             continue
@@ -317,7 +322,7 @@ def _format_datetime(value: datetime) -> str:
     return value.strftime("%d.%m.%Y %H:%M")
 
 
-def _event_to_dict(event: Event) -> dict[str, str | None]:
+def _event_to_dict(event: Event) -> EventDraftData:
     """Serialize an event draft for FSM storage."""
 
     return {
@@ -329,7 +334,7 @@ def _event_to_dict(event: Event) -> dict[str, str | None]:
     }
 
 
-def _event_from_dict(user_id: int, data: dict[str, str | None]) -> Event:
+def _event_from_dict(user_id: int, data: EventDraftData) -> Event:
     """Restore an event draft from FSM storage."""
 
     return Event(
